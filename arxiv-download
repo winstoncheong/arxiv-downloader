@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import arxiv
+import sys
+import tarfile
+
+ARXIV_DOWNLOADS_DIRECTORY = '~/projects/notes/arxiv/'
+
+
+def download_list_of_ids(input_id_list: list[int]):
+    search = arxiv.Search(id_list=input_id_list)
+
+    for result in arxiv.Client().results(search):
+        print()
+        print(f'Downloading {result.title}...')
+        print(f'arxiv preprint info: {repr(result)}')
+
+        res = result.download_pdf(dirpath='./')
+        print(f'Downloaded pdf path: {res}')
+
+        source_path = result.download_source(dirpath='./')
+        print(f'Downloaded source path: {source_path}')
+
+        # prompt user for directory to extract to
+        paper_dir = input("Directory to extract to? ")
+
+        # extract the tar.gz file
+        file = tarfile.open(source_path)
+        file.extractall(paper_dir)
+        file.close()
+
+        print(f'Extracted to {paper_dir}')
+
+
+        print(f'Done with {result.title}')
+
+
+
+# n = len(sys.argv)
+# print(sys.argv)
+# print("number of arguments:", n)
+
+if __name__ == '__main__':
+
+    if len(sys.argv) > 0:
+        print('args:', sys.argv[1:])
+        input_id_list = sys.argv[1:]
+        download_list_of_ids(input_id_list)
+
+
+    else: # zero arguments, enter REPL
+        while True:
+            line = input('Space separated list of ids (or "exit"): ')
+
+            if line == 'exit':
+                exit()
+            else: 
+                input_id_list = line.split(' ')
+                download_list_of_ids(input_id_list)
+
