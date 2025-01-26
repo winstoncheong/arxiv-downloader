@@ -3,9 +3,18 @@
 import arxiv
 import sys
 import tarfile
+import gzip
+import io
+import shutil
+import os
 
 ARXIV_DOWNLOADS_DIRECTORY = '~/projects/notes/arxiv/'
 
+def unzip_gz_file(input_file, output_file):
+    print(f'Unzipping {input_file} to {output_file}')
+    with gzip.open(input_file, 'rb') as f_in:
+        with io.open(output_file, 'wb') as f_out:
+            f_out.write(f_in.read())
 
 def download_list_of_ids(input_id_list: list[int]):
     search = arxiv.Search(id_list=input_id_list)
@@ -40,12 +49,36 @@ def download_list_of_ids(input_id_list: list[int]):
         paper_dir = input("Directory to extract to? ")
 
         # extract the tar.gz file
-        file = tarfile.open(source_path)
-        file.extractall(paper_dir)
-        file.close()
+        # file = tarfile.open(source_path)
+        # file.extractall(paper_dir)
+        # file.close()
 
-        print(f'Extracted to {paper_dir}')
+        # extract the gz file
+        tar_path = source_path[:-3]
+        unzip_gz_file(source_path, tar_path)
 
+        # detect if resulting file is a tar or just tex
+        if tarfile.is_tarfile(tar_path):
+            print('Was a tar file')
+            tarfile.open(tar_path).extractall(paper_dir)
+        else:
+            print('Was a tex file')
+            # change extension to .tex, move into paper_dir
+            renamed_path = tar_path[:-4] + ".tex"
+            print(f'Renaming {tar_path} to {renamed_path}')
+            shutil.move(tar_path, renamed_path)
+
+            print(f'making directory "{paper_dir}"')
+            os.makedirs(paper_dir, exist_ok=True)
+
+            print(f'Moving {renamed_path} to directory "{paper_dir}"')
+            try:
+                shutil.move(renamed_path, paper_dir)
+                print(f'Extracted to {paper_dir}')
+
+            except Exception as e:
+                print(e)
+                print('skipping move')
 
         print(f'Done with {result.get_short_id()}: {result.title}')
 
