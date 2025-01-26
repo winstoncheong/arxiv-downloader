@@ -12,8 +12,23 @@ def download_list_of_ids(input_id_list: list[int]):
 
     for result in arxiv.Client().results(search):
         print()
-        print(f'Downloading {result.title}...')
-        print(f'arxiv preprint info: {repr(result)}')
+        print(f'Downloading {result.get_short_id()}: {result.title}...')
+        # print(f'arxiv preprint info: {repr(result)}')
+
+        print('  Entry ID:', result.entry_id)
+        print('  Title:', result.title)
+        print('  Authors:', [author.name for author in result.authors])
+        print('  Summary:', result.summary)
+        print('  Comment:', result.comment)
+        print('  Journal reference:', result.journal_ref)
+        print('  DOI:', result.doi)
+        print('  Primary category:', result.primary_category)
+        print('  Categories:', result.categories)
+        print('  Links:', [link.href for link in result.links])
+        print('  PDF:', result.pdf_url)
+        print()
+
+
 
         res = result.download_pdf(dirpath='./')
         print(f'Downloaded pdf path: {res}')
@@ -32,7 +47,7 @@ def download_list_of_ids(input_id_list: list[int]):
         print(f'Extracted to {paper_dir}')
 
 
-        print(f'Done with {result.title}')
+        print(f'Done with {result.get_short_id()}: {result.title}')
 
 
 
@@ -54,7 +69,7 @@ if __name__ == '__main__':
 
             if line == 'exit':
                 exit()
-            else: 
+            else:
                 input_id_list = line.split(' ')
                 download_list_of_ids(input_id_list)
 
