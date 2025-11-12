@@ -56,16 +56,21 @@ def download_list_of_ids(input_id_list: list[str]):
             if 'pdf' in link.href:
                 pdf_url = link.href
                 break
+
+        arxiv_identifier = result.get_short_id().replace('/', '_')
+        print(f'{arxiv_identifier=}')
         
         if pdf_url:
-            download_file(pdf_url, f"{result.get_short_id().replace('/', '_')}.pdf")
+            # I suspect that this no longer happens. 
+            # Something on the arXiv API side may have changed attributes in the Result object
+            download_file(pdf_url, f"{arxiv_identifier}.pdf")
         else:
             print('No PDF URL found, skipping PDF download.')
 
         # Construct source URL manually since pdf_url might be None
         if result.entry_id:
             source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/e-print/")
-            source_path = download_file(source_url, f"{result.get_short_id().replace('/', '_')}.tar.gz")
+            source_path = download_file(source_url, f"{arxiv_identifier}.tar.gz")
         else:
             print('No entry ID found, skipping source download.')
             continue
@@ -73,8 +78,11 @@ def download_list_of_ids(input_id_list: list[str]):
         # prompt user for directory to extract to
         try:
             paper_dir = input("Directory to extract to? ").strip()
+            if paper_dir == "":
+                paper_dir = arxiv_identifier
+                print(f"Using default directory: {paper_dir}")
         except EOFError:
-            paper_dir = f"paper_{result.get_short_id().replace('/', '_')}"
+            paper_dir = arxiv_identifier
             print(f"Using default directory: {paper_dir}")
 
         # extract the tar.gz file
@@ -126,13 +134,13 @@ def download_list_of_ids(input_id_list: list[str]):
 
 
 
-# n = len(sys.argv)
-# print(sys.argv)
-# print("number of arguments:", n)
 
 if __name__ == '__main__':
+    # n = len(sys.argv)
+    # print(sys.argv)
+    # print("number of arguments:", n)
 
-    if len(sys.argv) > 0:
+    if len(sys.argv) > 1:
         print('args:', sys.argv[1:])
         input_id_list = sys.argv[1:]
         download_list_of_ids(input_id_list)
