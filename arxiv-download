@@ -27,6 +27,11 @@ def unzip_gz_file(input_file, output_file):
         with io.open(output_file, 'wb') as f_out:
             f_out.write(f_in.read())
 
+def make_authors_string(authors):
+    last_names = [author.name.split()[-1] for author in authors]
+    truncated = last_names[:5]
+    return ','.join(truncated)
+
 def download_list_of_ids(input_id_list: list[str]):
     search = arxiv.Search(id_list=input_id_list)
 
@@ -57,13 +62,13 @@ def download_list_of_ids(input_id_list: list[str]):
                 pdf_url = link.href
                 break
 
-        arxiv_identifier = result.get_short_id().replace('/', '_')
-        print(f'{arxiv_identifier=}')
+        arxiv_id = result.get_short_id().replace('/', '_')
+        print(f'{arxiv_id=}')
         
         if pdf_url:
             # I suspect that this no longer happens. 
             # Something on the arXiv API side may have changed attributes in the Result object
-            download_file(pdf_url, f"{arxiv_identifier}.pdf")
+            download_file(pdf_url, f"{arxiv_id}.pdf")
         else:
             print('No PDF URL found, skipping PDF download.')
 
@@ -71,19 +76,23 @@ def download_list_of_ids(input_id_list: list[str]):
         if result.entry_id:
             # source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/e-print/")
             source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/src/")
-            source_path = download_file(source_url, f"{arxiv_identifier}.tar.gz")
+            source_path = download_file(source_url, f"{arxiv_id}.tar.gz")
         else:
             print('No entry ID found, skipping source download.')
             continue
+
+        authors_str = make_authors_string(result.authors)
+        title_str = result.title[:50].replace('/', '-').replace('\\', '-').strip()
+        default_dir = f"{arxiv_id}-{authors_str}-{title_str}"
 
         # prompt user for directory to extract to
         try:
             paper_dir = input("Directory to extract to? ").strip()
             if paper_dir == "":
-                paper_dir = arxiv_identifier
+                paper_dir = default_dir
                 print(f"Using default directory: {paper_dir}")
         except EOFError:
-            paper_dir = arxiv_identifier
+            paper_dir = default_dir
             print(f"Using default directory: {paper_dir}")
 
         # extract the tar.gz file
