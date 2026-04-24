@@ -69,7 +69,8 @@ def download_list_of_ids(input_id_list: list[str]):
 
         # Construct source URL manually since pdf_url might be None
         if result.entry_id:
-            source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/e-print/")
+            # source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/e-print/")
+            source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/src/")
             source_path = download_file(source_url, f"{arxiv_identifier}.tar.gz")
         else:
             print('No entry ID found, skipping source download.')
