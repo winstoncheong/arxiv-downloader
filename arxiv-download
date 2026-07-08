@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import arxiv
+import re
 import sys
 import tarfile
 import gzip
@@ -26,6 +27,9 @@ def unzip_gz_file(input_file, output_file):
     with gzip.open(input_file, 'rb') as f_in:
         with io.open(output_file, 'wb') as f_out:
             f_out.write(f_in.read())
+
+def sanitize_filename(title: str) -> str:
+    return re.sub(r'[<>:"/\\|?*$]', '', title[:50]).replace(' ', '-').strip('- ')
 
 def make_authors_string(authors):
     last_names = [author.name.split()[-1] for author in authors]
@@ -82,7 +86,7 @@ def download_list_of_ids(input_id_list: list[str]):
             continue
 
         authors_str = make_authors_string(result.authors)
-        title_str = result.title[:50].replace('/', '-').replace('\\', '-').strip()
+        title_str = sanitize_filename(result.title)
         default_dir = f"{arxiv_id}-{authors_str}-{title_str}"
 
         # prompt user for directory to extract to
