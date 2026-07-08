@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-downloader"
+version = "0.2.0"
+description = "Download papers from arXiv"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "arxiv>=2.1",
+    "requests>=2.31",
+]
+
+[project.scripts]
+arxiv-download = "arxiv_downloader.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["arxiv_downloader*"]

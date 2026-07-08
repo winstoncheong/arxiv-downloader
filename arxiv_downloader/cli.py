@@ -1,0 +1,59 @@
+import argparse
+import sys
+
+from . import __version__
+from .downloader import download_papers
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Download papers from arXiv.",
+    )
+    parser.add_argument(
+        'ids',
+        nargs='*',
+        metavar='ID',
+        help='arXiv paper ID(s) to download',
+    )
+    parser.add_argument(
+        '--output-dir',
+        default='.',
+        help='Base output directory (default: current directory)',
+    )
+    parser.add_argument(
+        '--no-prompt',
+        action='store_true',
+        help='Use default directory names without prompting',
+    )
+    parser.add_argument(
+        '-i', '--interactive',
+        action='store_true',
+        help='Enter interactive REPL mode',
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}',
+    )
+
+    args = parser.parse_args()
+
+    if args.interactive or (len(sys.argv) == 1 and not args.ids):
+        while True:
+            try:
+                line = input('Space separated list of ids (or "exit"): ')
+            except EOFError:
+                break
+            if line.strip() == 'exit':
+                break
+            id_list = line.strip().split()
+            if id_list:
+                download_papers(id_list, output_dir=args.output_dir, no_prompt=args.no_prompt)
+    elif args.ids:
+        download_papers(args.ids, output_dir=args.output_dir, no_prompt=args.no_prompt)
+    else:
+        parser.print_help()
+
+
+if __name__ == '__main__':
+    main()

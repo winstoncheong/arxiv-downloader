@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-import importlib.machinery
-import importlib.util
 import unittest
-import os
 
-script_path = os.path.join(os.path.dirname(__file__), 'arxiv-download')
-loader = importlib.machinery.SourceFileLoader('arxiv_download', script_path)
-spec = importlib.util.spec_from_loader('arxiv_download', loader, origin=script_path)
-mod = importlib.util.module_from_spec(spec)
-loader.exec_module(mod)
-sanitize_filename = mod.sanitize_filename
+from arxiv_downloader.utils import sanitize_filename
 
 
 class TestSanitizeFilename(unittest.TestCase):
