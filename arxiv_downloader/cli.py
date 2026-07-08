@@ -1,8 +1,10 @@
 import argparse
 import sys
 
+import json
+
 from . import __version__
-from .downloader import download_papers
+from .downloader import download_papers, fetch_papers_metadata
 
 
 def main():
@@ -31,6 +33,11 @@ def main():
         help='Enter interactive REPL mode',
     )
     parser.add_argument(
+        '--json',
+        action='store_true',
+        help='Output paper metadata as JSON (skips downloads)',
+    )
+    parser.add_argument(
         '--version',
         action='version',
         version=f'%(prog)s {__version__}',
@@ -38,7 +45,13 @@ def main():
 
     args = parser.parse_args()
 
-    if args.interactive or (len(sys.argv) == 1 and not args.ids):
+    if args.json:
+        if args.ids:
+            papers = fetch_papers_metadata(args.ids)
+            print(json.dumps(papers, indent=2))
+        else:
+            parser.error('--json requires paper IDs')
+    elif args.interactive or (len(sys.argv) == 1 and not args.ids):
         while True:
             try:
                 line = input('Space separated list of ids (or "exit"): ')
