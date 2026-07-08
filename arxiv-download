@@ -11,8 +11,6 @@ import os
 
 import requests
 
-ARXIV_DOWNLOADS_DIRECTORY = '~/projects/notes/arxiv/'
-
 def download_file(url, filename):
     print(f"Downloading {url} to {filename}")
     with requests.get(url, stream=True) as r:
@@ -57,8 +55,6 @@ def download_list_of_ids(input_id_list: list[str]):
         print('  PDF:', result.pdf_url)
         print()
 
-
-
         # Get PDF URL from links
         pdf_url = None
         for link in result.links:
@@ -70,15 +66,12 @@ def download_list_of_ids(input_id_list: list[str]):
         print(f'{arxiv_id=}')
         
         if pdf_url:
-            # I suspect that this no longer happens. 
-            # Something on the arXiv API side may have changed attributes in the Result object
             download_file(pdf_url, f"{arxiv_id}.pdf")
         else:
             print('No PDF URL found, skipping PDF download.')
 
         # Construct source URL manually since pdf_url might be None
         if result.entry_id:
-            # source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/e-print/")
             source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/src/")
             source_path = download_file(source_url, f"{arxiv_id}.tar.gz")
         else:
@@ -98,11 +91,6 @@ def download_list_of_ids(input_id_list: list[str]):
         except EOFError:
             paper_dir = default_dir
             print(f"Using default directory: {paper_dir}")
-
-        # extract the tar.gz file
-        # file = tarfile.open(source_path)
-        # file.extractall(paper_dir)
-        # file.close()
 
         # extract the gz file
         tar_path = source_path[:-3]
@@ -150,9 +138,6 @@ def download_list_of_ids(input_id_list: list[str]):
 
 
 if __name__ == '__main__':
-    # n = len(sys.argv)
-    # print(sys.argv)
-    # print("number of arguments:", n)
 
     if len(sys.argv) > 1:
         print('args:', sys.argv[1:])
