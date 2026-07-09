@@ -49,14 +49,12 @@ async function renderAllMathJax() {
 
 export default function ResultsTable({ papers }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [panelWidth, setPanelWidth] = useState(420);
   const [fallbackLatex, setFallbackLatex] = useState<string[]>([]);
   const dragging = useRef(false);
   const rafRef = useRef<number>();
 
-  const activeId = selectedId ?? hoveredId;
-  const activePaper = papers.find((p) => p.id === activeId);
+  const activePaper = papers.find((p) => p.id === selectedId);
 
   useEffect(() => {
     if (activePaper) {
@@ -130,8 +128,6 @@ export default function ResultsTable({ papers }: Props) {
                 <tr
                   key={p.id}
                   onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
-                  onMouseEnter={() => !selectedId && setHoveredId(p.id)}
-                  onMouseLeave={() => setHoveredId(null)}
                   style={{ cursor: 'pointer', background: pinned ? '#eef6ff' : undefined }}
                 >
                   <td style={cellStyle}>
@@ -203,11 +199,6 @@ export default function ResultsTable({ papers }: Props) {
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px 14px' }}>
                 <div dangerouslySetInnerHTML={{ __html: html }} />
-                {!selectedId && (
-                  <p style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                    Click a row to pin
-                  </p>
-                )}
               </div>
             </>
           );
