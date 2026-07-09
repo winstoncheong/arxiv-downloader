@@ -165,12 +165,15 @@ export default function ResultsTable({ papers }: Props) {
         style={{
           width: activePaper ? panelWidth : 0,
           minWidth: activePaper ? 280 : 0,
-          overflowY: 'auto',
           borderLeft: '1px solid #ccc',
-          padding: activePaper ? '10px 14px' : 0,
+          alignSelf: 'stretch',
+          position: 'sticky',
+          top: 0,
+          maxHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
           fontSize: 13,
           lineHeight: 1.5,
-          maxHeight: '80vh',
           transition: activePaper ? undefined : 'width 0.2s',
         }}
       >
@@ -178,30 +181,34 @@ export default function ResultsTable({ papers }: Props) {
           const { html } = renderLatex(activePaper.summary);
           return (
             <>
-              {selectedId && (
-                <button
-                  onClick={() => setSelectedId(null)}
-                  style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer', fontSize: 16, color: '#999' }}
-                  title="Unpin"
-                >
-                  ✕
-                </button>
-              )}
-              <h2 style={{ fontSize: 15, margin: '0 0 6px' }}>{activePaper.title}</h2>
-              <p style={{ margin: '0 0 8px', color: '#555' }}>
-                {activePaper.authors.join(', ')} &middot; {activePaper.primary_category}
-              </p>
-              <div dangerouslySetInnerHTML={{ __html: html }} />
-              {!selectedId && (
-                <p style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                  Click a row to pin
+              <div style={{ padding: '10px 14px 6px', flexShrink: 0, background: '#fff', borderBottom: '1px solid #eee' }}>
+                {selectedId && (
+                  <button
+                    onClick={() => setSelectedId(null)}
+                    style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer', fontSize: 16, color: '#999' }}
+                    title="Unpin"
+                  >
+                    ✕
+                  </button>
+                )}
+                <h2 style={{ fontSize: 15, margin: 0 }}>{activePaper.title}</h2>
+                <p style={{ margin: '4px 0 0', color: '#555' }}>
+                  {activePaper.authors.join(', ')} &middot; {activePaper.primary_category}
                 </p>
-              )}
-              <p style={{ marginTop: 10 }}>
-                <a href={`https://arxiv.org/abs/${activePaper.id}`} target="_blank" rel="noreferrer">
-                  arxiv.org/abs/{activePaper.id}
-                </a>
-              </p>
+                <p style={{ margin: '2px 0 0' }}>
+                  <a href={`https://arxiv.org/abs/${activePaper.id}`} target="_blank" rel="noreferrer">
+                    arxiv.org/abs/{activePaper.id}
+                  </a>
+                </p>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px 14px' }}>
+                <div dangerouslySetInnerHTML={{ __html: html }} />
+                {!selectedId && (
+                  <p style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+                    Click a row to pin
+                  </p>
+                )}
+              </div>
             </>
           );
         })()}
