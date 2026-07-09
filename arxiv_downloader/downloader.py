@@ -68,24 +68,28 @@ def search_papers(query, max_results=25, start=0, sort_by=None, sort_order=None)
 
 def download_papers(id_list, output_dir="."):
     search = arxiv.Search(id_list=id_list)
+    results = []
 
     for result in arxiv.Client().results(search):
         print(f'\n{result.get_short_id()}: {result.title}', file=sys.stderr)
 
-        pdf_url = next((link.href for link in result.links if 'pdf' in link.href), None)
         arxiv_id = result.get_short_id().replace('/', '_')
+        authors_str = make_authors_string(result.authors)
+        title_str = sanitize_filename(result.title)
+
+        pdf_url = next((link.href for link in result.links if 'pdf' in link.href), None)
+        pdf_name = f"{arxiv_id}-{authors_str}-{title_str}.pdf"
 
         if pdf_url:
-            download_file(pdf_url, os.path.join(output_dir, f"{arxiv_id}.pdf"))
+            download_file(pdf_url, os.path.join(output_dir, pdf_name))
 
         if not result.entry_id:
+            results.append(os.path.join(output_dir, pdf_name))
             continue
 
         source_url = result.entry_id.replace("http://arxiv.org/abs/", "https://arxiv.org/src/")
         source_path = download_file(source_url, os.path.join(output_dir, f"{arxiv_id}.tar.gz"))
 
-        authors_str = make_authors_string(result.authors)
-        title_str = sanitize_filename(result.title)
         paper_dir = os.path.join(output_dir, f"{arxiv_id}-{authors_str}-{title_str}")
 
         tar_path = source_path[:-3]
@@ -109,3 +113,6 @@ def download_papers(id_list, output_dir="."):
             os.remove(tar_path)
 
         print(f'  -> {paper_dir}', file=sys.stderr)
+        results.append(paper_dir)
+
+    return results

@@ -51,8 +51,8 @@ def download(arxiv_id: str = Query(...), output_dir: str = Query(str(DEFAULT_DOW
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     try:
-        download_papers([arxiv_id], output_dir=str(out))
-        return JSONResponse({"status": "ok", "path": str(out / arxiv_id.replace("/", "_"))})
+        paths = download_papers([arxiv_id], output_dir=str(out))
+        return JSONResponse({"status": "ok", "path": paths[0] if paths else ""})
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"status": "error", "message": str(e) or type(e).__name__}, status_code=500)

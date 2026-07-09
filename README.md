@@ -77,10 +77,12 @@ arxiv-download serve
 
 Opens a browser at `http://localhost:8080` with:
 
-- Free-form search input
-- Advanced fields: author, title, category, max results
-- Compact table with columns: ID, Title, Authors, Category, Date
-- Abstract shown on row hover
+- Free-form search input with sort and max-results controls
+- Advanced fields: author, title, category
+- Download-to directory selector
+- Compact table with columns: ID, Title, Authors, Category, D/L
+- Side panel with abstract, authors, categories, and download button (always visible, defaults to first result)
+- Click a row to view its details in the side panel
 
 ## Query syntax
 
