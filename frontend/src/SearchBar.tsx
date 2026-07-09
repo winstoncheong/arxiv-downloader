@@ -11,11 +11,13 @@ export default function SearchBar({ initialParams, onSearch }: SearchBarProps) {
   const [title, setTitle] = useState(String(initialParams?.title ?? ''));
   const [category, setCategory] = useState(String(initialParams?.category ?? ''));
   const [maxResults, setMaxResults] = useState(Number(initialParams?.max_results ?? 25));
+  const [sortBy, setSortBy] = useState(String(initialParams?.sort_by ?? 'relevance'));
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch({ query, author, title, category, max_results: maxResults });
+    const sortOrder = sortBy === 'submitted_date' ? 'descending' : 'descending';
+    onSearch({ query, author, title, category, max_results: maxResults, sort_by: sortBy, sort_order: sortOrder });
   };
 
   return (
@@ -36,6 +38,11 @@ export default function SearchBar({ initialParams, onSearch }: SearchBarProps) {
           style={{ padding: '6px 8px', width: 70, fontSize: 13 }}
           title="Max results"
         />
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ fontSize: 13, padding: '6px 6px' }}>
+          <option value="relevance">Relevance</option>
+          <option value="submitted_date">Most recent</option>
+          <option value="updated_date">Recently updated</option>
+        </select>
         <button type="submit">Search</button>
         <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}>
           {showAdvanced ? 'Hide' : 'Advanced'}

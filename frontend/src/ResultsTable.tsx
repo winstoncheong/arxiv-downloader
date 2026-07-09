@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 
 interface Props {
   papers: Paper[];
+  downloadDir: string;
 }
 
 function loadMathJax(): Promise<void> {
@@ -47,8 +48,8 @@ async function renderAllMathJax() {
   }
 }
 
-export default function ResultsTable({ papers }: Props) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export default function ResultsTable({ papers, downloadDir }: Props) {
+  const [selectedId, setSelectedId] = useState<string | null>(papers[0]?.id ?? null);
   const [panelWidth, setPanelWidth] = useState(420);
   const [fallbackLatex, setFallbackLatex] = useState<string[]>([]);
   const dragging = useRef(false);
@@ -60,7 +61,7 @@ export default function ResultsTable({ papers }: Props) {
   const handleDownload = useCallback(async (arxivId: string) => {
     setDownloading(arxivId);
     try {
-      const res = await fetch(`/api/download?arxiv_id=${arxivId}`);
+      const res = await fetch(`/api/download?arxiv_id=${arxivId}&output_dir=${encodeURIComponent(downloadDir)}`);
       const data = await res.json();
       if (data.status === 'ok') {
         alert(`Downloaded to ${data.path}`);
@@ -88,6 +89,12 @@ export default function ResultsTable({ papers }: Props) {
       renderAllMathJax().then(() => setFallbackLatex([]));
     }
   }, [fallbackLatex]);
+
+  useEffect(() => {
+    if (papers.length > 0 && !papers.find((p) => p.id === selectedId)) {
+      setSelectedId(papers[0].id);
+    }
+  }, [papers]);
 
   const onMouseDown = useCallback(() => { dragging.current = true; }, []);
 
@@ -134,19 +141,17 @@ export default function ResultsTable({ papers }: Props) {
               <th style={headerStyle}>Title</th>
               <th style={{ ...headerStyle, width: 170 }}>Authors</th>
               <th style={{ ...headerStyle, width: 95 }}>Category</th>
-              <th style={{ ...headerStyle, width: 75 }}>Date</th>
               <th style={{ ...headerStyle, width: 70 }}>D/L</th>
             </tr>
           </thead>
           <tbody>
             {papers.map((p) => {
-              const submitted = p.entry_id?.match(/(\d{4})(\d{2})/)?.[0] || '';
               const authors = p.authors.map((a) => a.split(' ').pop()).join(', ');
               const pinned = p.id === selectedId;
               return (
                 <tr
                   key={p.id}
-                  onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
+                  onClick={() => setSelectedId(p.id)}
                   style={{ cursor: 'pointer', background: pinned ? '#eef6ff' : undefined }}
                 >
                   <td style={cellStyle}>
@@ -157,7 +162,6 @@ export default function ResultsTable({ papers }: Props) {
                   <td style={cellStyle}>{p.title}</td>
                   <td style={{ ...cellStyle, fontSize: 12 }}>{authors}</td>
                   <td style={cellStyle}>{p.primary_category}</td>
-                  <td style={cellStyle}>{submitted}</td>
                   <td style={{ ...cellStyle, textAlign: 'center' }}>
                     {downloading === p.id ? (
                       <span style={{ fontSize: 11, color: '#999' }}>...</span>
@@ -185,8 +189,8 @@ export default function ResultsTable({ papers }: Props) {
 
       <div
         style={{
-          width: activePaper ? panelWidth : 0,
-          minWidth: activePaper ? 280 : 0,
+          width: panelWidth,
+          minWidth: 280,
           borderLeft: '1px solid #ccc',
           alignSelf: 'stretch',
           position: 'sticky',
@@ -196,35 +200,26 @@ export default function ResultsTable({ papers }: Props) {
           flexDirection: 'column',
           fontSize: 13,
           lineHeight: 1.5,
-          transition: activePaper ? undefined : 'width 0.2s',
         }}
       >
-        {activePaper && (() => {
-          const { html } = renderLatex(activePaper.summary);
+        {(() => {
+          const paper = activePaper!;
+          const { html } = renderLatex(paper.summary);
           return (
             <>
               <div style={{ padding: '10px 14px 6px', flexShrink: 0, background: '#fff', borderBottom: '1px solid #eee' }}>
-                {selectedId && (
-                  <button
-                    onClick={() => setSelectedId(null)}
-                    style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer', fontSize: 16, color: '#999' }}
-                    title="Unpin"
-                  >
-                    ✕
-                  </button>
-                )}
-                <h2 style={{ fontSize: 15, margin: 0 }}>{activePaper.title}</h2>
+                <h2 style={{ fontSize: 15, margin: 0 }}>{paper.title}</h2>
                 <p style={{ margin: '4px 0 0', color: '#555' }}>
-                  {activePaper.authors.join(', ')} &middot; {activePaper.primary_category}
+                  {paper.authors.join(', ')} &middot; {paper.primary_category}
                 </p>
                 <p style={{ margin: '2px 0 0' }}>
-                  <a href={`https://arxiv.org/abs/${activePaper.id}`} target="_blank" rel="noreferrer">
-                    arxiv.org/abs/{activePaper.id}
+                  <a href={`https://arxiv.org/abs/${paper.id}`} target="_blank" rel="noreferrer">
+                    arxiv.org/abs/{paper.id}
                   </a>
                 </p>
                 <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
-                  <button onClick={() => handleDownload(activePaper.id)} style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, border: 'none', cursor: 'pointer', color: '#1a73e8' }}>
-                    {downloading === activePaper.id ? '...' : 'Download PDF + Source'}
+                  <button onClick={() => handleDownload(paper.id)} style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, border: 'none', cursor: 'pointer', color: '#1a73e8' }}>
+                    {downloading === paper.id ? '...' : 'Download PDF + Source'}
                   </button>
                 </div>
               </div>

@@ -6,6 +6,6 @@ def sanitize_filename(title: str) -> str:
 
 
 def make_authors_string(authors):
-    last_names = [author.name.split()[-1] for author in authors]
+    last_names = [str(author).split()[-1] for author in authors]
     truncated = last_names[:5]
     return ','.join(truncated)

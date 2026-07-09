@@ -1,3 +1,4 @@
+import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, Query
@@ -42,17 +43,19 @@ def search(
     return {"papers": papers, "total": len(papers)}
 
 
-DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "test"
+DEFAULT_DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "test"
 
 
 @app.get("/api/download")
-def download(arxiv_id: str = Query(...)):
-    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+def download(arxiv_id: str = Query(...), output_dir: str = Query(str(DEFAULT_DOWNLOAD_DIR))):
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
     try:
-        download_papers([arxiv_id], output_dir=str(DOWNLOAD_DIR))
-        return JSONResponse({"status": "ok", "path": str(DOWNLOAD_DIR / arxiv_id.replace("/", "_"))})
+        download_papers([arxiv_id], output_dir=str(out))
+        return JSONResponse({"status": "ok", "path": str(out / arxiv_id.replace("/", "_"))})
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        traceback.print_exc()
+        return JSONResponse({"status": "error", "message": str(e) or type(e).__name__}, status_code=500)
 
 
 if FRONTEND_DIR.is_dir():
