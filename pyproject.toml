@@ -4,14 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arxiv-downloader"
-version = "0.2.0"
-description = "Download papers from arXiv"
+version = "0.3.0"
+description = "Search and download papers from arXiv"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "arxiv>=2.1",
     "requests>=2.31",
+]
+
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
 ]
 
 [project.scripts]

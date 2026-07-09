@@ -8,3 +8,6 @@ test/
 dist/
 *.egg-info/
 build/
+node_modules/
+frontend/dist/
+server.log

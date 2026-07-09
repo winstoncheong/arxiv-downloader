@@ -27,24 +27,43 @@ def unzip_gz_file(input_file, output_file):
             f_out.write(f_in.read())
 
 
+def _paper_to_dict(result):
+    return {
+        'id': result.get_short_id(),
+        'entry_id': result.entry_id,
+        'title': result.title,
+        'authors': [author.name for author in result.authors],
+        'summary': result.summary,
+        'comment': result.comment,
+        'journal_ref': result.journal_ref,
+        'doi': result.doi,
+        'primary_category': str(result.primary_category),
+        'categories': result.categories,
+        'pdf_url': result.pdf_url,
+        'links': [link.href for link in result.links],
+    }
+
+
 def fetch_papers_metadata(id_list):
-    results = []
-    for result in arxiv.Client().results(arxiv.Search(id_list=id_list)):
-        results.append({
-            'id': result.get_short_id(),
-            'entry_id': result.entry_id,
-            'title': result.title,
-            'authors': [author.name for author in result.authors],
-            'summary': result.summary,
-            'comment': result.comment,
-            'journal_ref': result.journal_ref,
-            'doi': result.doi,
-            'primary_category': str(result.primary_category),
-            'categories': result.categories,
-            'pdf_url': result.pdf_url,
-            'links': [link.href for link in result.links],
-        })
-    return results
+    return [_paper_to_dict(r) for r in arxiv.Client().results(arxiv.Search(id_list=id_list))]
+
+
+def search_papers(query, max_results=25, start=0, sort_by=None, sort_order=None):
+    sort_by_map = {
+        'relevance': arxiv.SortCriterion.Relevance,
+        'submitted_date': arxiv.SortCriterion.SubmittedDate,
+        'updated_date': arxiv.SortCriterion.LastUpdatedDate,
+    }
+    sort_order_map = {
+        'ascending': arxiv.SortOrder.Ascending,
+        'descending': arxiv.SortOrder.Descending,
+    }
+    kwargs = dict(query=query, max_results=max_results)
+    if sort_by:
+        kwargs['sort_by'] = sort_by_map[sort_by]
+    if sort_order:
+        kwargs['sort_order'] = sort_order_map[sort_order]
+    return [_paper_to_dict(r) for r in arxiv.Client().results(arxiv.Search(**kwargs))]
 
 
 def download_papers(id_list, output_dir="."):
