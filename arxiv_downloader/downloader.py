@@ -47,7 +47,7 @@ def fetch_papers_metadata(id_list):
     return results
 
 
-def download_papers(id_list, output_dir=".", no_prompt=False):
+def download_papers(id_list, output_dir="."):
     search = arxiv.Search(id_list=id_list)
 
     for result in arxiv.Client().results(search):
@@ -67,15 +67,7 @@ def download_papers(id_list, output_dir=".", no_prompt=False):
 
         authors_str = make_authors_string(result.authors)
         title_str = sanitize_filename(result.title)
-        default_dir = os.path.join(output_dir, f"{arxiv_id}-{authors_str}-{title_str}")
-
-        if no_prompt:
-            paper_dir = default_dir
-        else:
-            try:
-                paper_dir = input("Directory to extract to? ").strip() or default_dir
-            except EOFError:
-                paper_dir = default_dir
+        paper_dir = os.path.join(output_dir, f"{arxiv_id}-{authors_str}-{title_str}")
 
         tar_path = source_path[:-3]
         unzip_gz_file(source_path, tar_path)

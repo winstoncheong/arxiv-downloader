@@ -19,13 +19,8 @@ def main():
     )
     parser.add_argument(
         '--output-dir',
-        default='.',
+        default=None,
         help='Base output directory (default: current directory)',
-    )
-    parser.add_argument(
-        '--no-prompt',
-        action='store_true',
-        help='Use default directory names without prompting',
     )
     parser.add_argument(
         '-i', '--interactive',
@@ -45,6 +40,8 @@ def main():
 
     args = parser.parse_args()
 
+    output_dir = args.output_dir or '.'
+
     if args.json:
         if args.ids:
             papers = fetch_papers_metadata(args.ids)
@@ -61,9 +58,9 @@ def main():
                 break
             id_list = line.strip().split()
             if id_list:
-                download_papers(id_list, output_dir=args.output_dir, no_prompt=args.no_prompt)
+                download_papers(id_list, output_dir=output_dir)
     elif args.ids:
-        download_papers(args.ids, output_dir=args.output_dir, no_prompt=args.no_prompt)
+        download_papers(args.ids, output_dir=output_dir)
     else:
         parser.print_help()
 
