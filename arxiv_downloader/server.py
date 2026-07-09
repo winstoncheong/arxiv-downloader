@@ -1,11 +1,10 @@
 from pathlib import Path
 
-import requests
 from fastapi import FastAPI, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .downloader import fetch_papers_metadata, search_papers
+from .downloader import download_papers, fetch_papers_metadata, search_papers
 
 app = FastAPI(title="arxiv-downloader")
 
@@ -43,28 +42,17 @@ def search(
     return {"papers": papers, "total": len(papers)}
 
 
+DOWNLOAD_DIR = Path(__file__).resolve().parent.parent / "test"
+
+
 @app.get("/api/download")
-def download(arxiv_id: str = Query(...), type: str = Query("pdf")):
-    papers = fetch_papers_metadata([arxiv_id])
-    if not papers:
-        from fastapi.responses import JSONResponse
-        return JSONResponse({"error": "paper not found"}, status_code=404)
-
-    paper = papers[0]
-    url = paper.get('pdf_url', '')
-    if not url:
-        pdf_url = next((link for link in paper['links'] if 'pdf' in link), None)
-        if pdf_url:
-            url = pdf_url
-
-    filename = f"{arxiv_id.replace('/', '_')}.pdf"
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    return StreamingResponse(
-        response.iter_content(chunk_size=8192),
-        media_type='application/pdf',
-        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
-    )
+def download(arxiv_id: str = Query(...)):
+    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        download_papers([arxiv_id], output_dir=str(DOWNLOAD_DIR))
+        return JSONResponse({"status": "ok", "path": str(DOWNLOAD_DIR / arxiv_id.replace("/", "_"))})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 
 if FRONTEND_DIR.is_dir():

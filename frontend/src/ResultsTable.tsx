@@ -55,6 +55,24 @@ export default function ResultsTable({ papers }: Props) {
   const rafRef = useRef<number>();
 
   const activePaper = papers.find((p) => p.id === selectedId);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = useCallback(async (arxivId: string) => {
+    setDownloading(arxivId);
+    try {
+      const res = await fetch(`/api/download?arxiv_id=${arxivId}`);
+      const data = await res.json();
+      if (data.status === 'ok') {
+        alert(`Downloaded to ${data.path}`);
+      } else {
+        alert(`Download failed: ${data.message}`);
+      }
+    } catch (e: any) {
+      alert(`Download error: ${e.message}`);
+    } finally {
+      setDownloading(null);
+    }
+  }, []);
 
   useEffect(() => {
     if (activePaper) {
@@ -141,7 +159,11 @@ export default function ResultsTable({ papers }: Props) {
                   <td style={cellStyle}>{p.primary_category}</td>
                   <td style={cellStyle}>{submitted}</td>
                   <td style={{ ...cellStyle, textAlign: 'center' }}>
-                    <a href={`/api/download?arxiv_id=${p.id}&type=pdf`} download style={{ fontSize: 11, color: '#1a73e8', textDecoration: 'none' }} title="Download PDF">PDF</a>
+                    {downloading === p.id ? (
+                      <span style={{ fontSize: 11, color: '#999' }}>...</span>
+                    ) : (
+                      <span onClick={(e) => { e.stopPropagation(); handleDownload(p.id); }} style={{ fontSize: 11, color: '#1a73e8', cursor: 'pointer', textDecoration: 'underline' }} title="Download PDF + Source">D/L</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -201,12 +223,9 @@ export default function ResultsTable({ papers }: Props) {
                   </a>
                 </p>
                 <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
-                  <a href={`/api/download?arxiv_id=${activePaper.id}&type=pdf`} download style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, textDecoration: 'none', color: '#1a73e8' }}>
-                    Download PDF
-                  </a>
-                  <a href={`/api/download?arxiv_id=${activePaper.id}&type=source`} download style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, textDecoration: 'none', color: '#1a73e8' }}>
-                    Download Source
-                  </a>
+                  <button onClick={() => handleDownload(activePaper.id)} style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, border: 'none', cursor: 'pointer', color: '#1a73e8' }}>
+                    {downloading === activePaper.id ? '...' : 'Download PDF + Source'}
+                  </button>
                 </div>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px 14px' }}>
