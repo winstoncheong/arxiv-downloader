@@ -7,32 +7,81 @@ interface Props {
   papers: Paper[];
 }
 
-function renderLatex(text: string): string {
+function loadMathJax(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).MathJax) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js';
+    script.async = true;
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
+function renderLatex(text: string): { html: string; fallbackBlocks: string[] } {
+  const fallbackBlocks: string[] = [];
+  let blockIdx = 0;
+
+  const renderOne = (math: string, display: boolean): string => {
+    try {
+      return katex.renderToString(math, { displayMode: display, throwOnError: false });
+    } catch {
+      const id = `mjx-fallback-${blockIdx++}`;
+      const delim = display ? '$$' : '$';
+      fallbackBlocks.push(delim + math + delim);
+      return `<span class="mathjax-fallback" id="${id}">${delim + math + delim}</span>`;
+    }
+  };
+
   let html = text;
-  html = html.replace(/\$\$(.+?)\$\$/gs, (_, math) => {
-    try { return katex.renderToString(math, { displayMode: true, throwOnError: false }); }
-    catch { return _; }
-  });
-  html = html.replace(/\$(.+?)\$/g, (_, math) => {
-    try { return katex.renderToString(math, { throwOnError: false }); }
-    catch { return _; }
-  });
-  return html;
+  html = html.replace(/\$\$(.+?)\$\$/gs, (_, math) => renderOne(math, true));
+  html = html.replace(/\$(.+?)\$/g, (_, math) => renderOne(math, false));
+  return { html, fallbackBlocks };
+}
+
+async function renderAllMathJax() {
+  await loadMathJax();
+  const mj = (window as any).MathJax;
+  if (mj?.typesetPromise) {
+    await mj.typesetPromise();
+  }
 }
 
 export default function ResultsTable({ papers }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [panelWidth, setPanelWidth] = useState(420);
+  const [fallbackLatex, setFallbackLatex] = useState<string[]>([]);
   const dragging = useRef(false);
+  const rafRef = useRef<number>();
 
-  const selectedPaper = papers.find((p) => p.id === selectedId);
+  const activeId = selectedId ?? hoveredId;
+  const activePaper = papers.find((p) => p.id === activeId);
+
+  useEffect(() => {
+    if (activePaper) {
+      const { fallbackBlocks } = renderLatex(activePaper.summary);
+      if (fallbackBlocks.length > 0) {
+        setFallbackLatex(fallbackBlocks);
+      }
+    }
+  }, [activePaper]);
+
+  useEffect(() => {
+    if (fallbackLatex.length > 0) {
+      renderAllMathJax().then(() => setFallbackLatex([]));
+    }
+  }, [fallbackLatex]);
 
   const onMouseDown = useCallback(() => { dragging.current = true; }, []);
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      setPanelWidth((prev) => Math.max(280, Math.min(800, prev - e.movementX)));
+      cancelAnimationFrame(rafRef.current!);
+      rafRef.current = requestAnimationFrame(() => {
+        setPanelWidth((prev) => Math.max(280, Math.min(800, prev - e.movementX)));
+      });
     };
     const onMouseUp = () => { dragging.current = false; };
     document.addEventListener('mousemove', onMouseMove);
@@ -76,12 +125,14 @@ export default function ResultsTable({ papers }: Props) {
             {papers.map((p) => {
               const submitted = p.entry_id?.match(/(\d{4})(\d{2})/)?.[0] || '';
               const authors = p.authors.map((a) => a.split(' ').pop()).join(', ');
-              const selected = p.id === selectedId;
+              const pinned = p.id === selectedId;
               return (
                 <tr
                   key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  style={{ cursor: 'pointer', background: selected ? '#eef6ff' : undefined }}
+                  onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
+                  onMouseEnter={() => !selectedId && setHoveredId(p.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{ cursor: 'pointer', background: pinned ? '#eef6ff' : undefined }}
                 >
                   <td style={cellStyle}>
                     <a href={`https://arxiv.org/abs/${p.id}`} target="_blank" rel="noreferrer">
@@ -112,33 +163,48 @@ export default function ResultsTable({ papers }: Props) {
 
       <div
         style={{
-          width: selectedPaper ? panelWidth : 0,
-          minWidth: selectedPaper ? 280 : 0,
+          width: activePaper ? panelWidth : 0,
+          minWidth: activePaper ? 280 : 0,
           overflowY: 'auto',
           borderLeft: '1px solid #ccc',
-          padding: selectedPaper ? '10px 14px' : 0,
+          padding: activePaper ? '10px 14px' : 0,
           fontSize: 13,
           lineHeight: 1.5,
           maxHeight: '80vh',
-          transition: selectedPaper ? undefined : 'width 0.15s',
+          transition: activePaper ? undefined : 'width 0.2s',
         }}
       >
-        {selectedPaper && (
-          <>
-            <h2 style={{ fontSize: 15, margin: '0 0 6px' }}>{selectedPaper.title}</h2>
-            <p style={{ margin: '0 0 8px', color: '#555' }}>
-              {selectedPaper.authors.join(', ')} &middot; {selectedPaper.primary_category}
-            </p>
-            <div
-              dangerouslySetInnerHTML={{ __html: renderLatex(selectedPaper.summary) }}
-            />
-            <p style={{ marginTop: 10 }}>
-              <a href={`https://arxiv.org/abs/${selectedPaper.id}`} target="_blank" rel="noreferrer">
-                arxiv.org/abs/{selectedPaper.id}
-              </a>
-            </p>
-          </>
-        )}
+        {activePaper && (() => {
+          const { html } = renderLatex(activePaper.summary);
+          return (
+            <>
+              {selectedId && (
+                <button
+                  onClick={() => setSelectedId(null)}
+                  style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer', fontSize: 16, color: '#999' }}
+                  title="Unpin"
+                >
+                  ✕
+                </button>
+              )}
+              <h2 style={{ fontSize: 15, margin: '0 0 6px' }}>{activePaper.title}</h2>
+              <p style={{ margin: '0 0 8px', color: '#555' }}>
+                {activePaper.authors.join(', ')} &middot; {activePaper.primary_category}
+              </p>
+              <div dangerouslySetInnerHTML={{ __html: html }} />
+              {!selectedId && (
+                <p style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+                  Click a row to pin
+                </p>
+              )}
+              <p style={{ marginTop: 10 }}>
+                <a href={`https://arxiv.org/abs/${activePaper.id}`} target="_blank" rel="noreferrer">
+                  arxiv.org/abs/{activePaper.id}
+                </a>
+              </p>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
