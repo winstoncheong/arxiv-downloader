@@ -1,8 +1,9 @@
 from pathlib import Path
 
+import requests
 from fastapi import FastAPI, Query
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 from .downloader import fetch_papers_metadata, search_papers
 
@@ -40,6 +41,30 @@ def search(
         q = " AND ".join(parts) if parts else "all:electron"
     papers = search_papers(q, max_results=max_results, start=start, sort_by=sort_by, sort_order=sort_order)
     return {"papers": papers, "total": len(papers)}
+
+
+@app.get("/api/download")
+def download(arxiv_id: str = Query(...), type: str = Query("pdf")):
+    papers = fetch_papers_metadata([arxiv_id])
+    if not papers:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "paper not found"}, status_code=404)
+
+    paper = papers[0]
+    url = paper.get('pdf_url', '')
+    if not url:
+        pdf_url = next((link for link in paper['links'] if 'pdf' in link), None)
+        if pdf_url:
+            url = pdf_url
+
+    filename = f"{arxiv_id.replace('/', '_')}.pdf"
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    return StreamingResponse(
+        response.iter_content(chunk_size=8192),
+        media_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
 
 
 if FRONTEND_DIR.is_dir():

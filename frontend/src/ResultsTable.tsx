@@ -117,6 +117,7 @@ export default function ResultsTable({ papers }: Props) {
               <th style={{ ...headerStyle, width: 170 }}>Authors</th>
               <th style={{ ...headerStyle, width: 95 }}>Category</th>
               <th style={{ ...headerStyle, width: 75 }}>Date</th>
+              <th style={{ ...headerStyle, width: 70 }}>D/L</th>
             </tr>
           </thead>
           <tbody>
@@ -139,6 +140,9 @@ export default function ResultsTable({ papers }: Props) {
                   <td style={{ ...cellStyle, fontSize: 12 }}>{authors}</td>
                   <td style={cellStyle}>{p.primary_category}</td>
                   <td style={cellStyle}>{submitted}</td>
+                  <td style={{ ...cellStyle, textAlign: 'center' }}>
+                    <a href={`/api/download?arxiv_id=${p.id}&type=pdf`} download style={{ fontSize: 11, color: '#1a73e8', textDecoration: 'none' }} title="Download PDF">PDF</a>
+                  </td>
                 </tr>
               );
             })}
@@ -196,6 +200,14 @@ export default function ResultsTable({ papers }: Props) {
                     arxiv.org/abs/{activePaper.id}
                   </a>
                 </p>
+                <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
+                  <a href={`/api/download?arxiv_id=${activePaper.id}&type=pdf`} download style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, textDecoration: 'none', color: '#1a73e8' }}>
+                    Download PDF
+                  </a>
+                  <a href={`/api/download?arxiv_id=${activePaper.id}&type=source`} download style={{ fontSize: 12, padding: '2px 10px', background: '#e8f0fe', borderRadius: 4, textDecoration: 'none', color: '#1a73e8' }}>
+                    Download Source
+                  </a>
+                </div>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px 14px' }}>
                 <div dangerouslySetInnerHTML={{ __html: html }} />
